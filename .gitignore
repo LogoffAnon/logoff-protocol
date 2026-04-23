@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build artifacts (legacy Solana; safe to keep for local caches)
+target/
+
+# Circuit build artifacts
+*.ptau
+*.zkey
+*.r1cs
+*.sym
+*_js/
+**/circuits/build/
+
+# Environment
+.env
+*.pem
+*.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# LogOff EVM - heavy / sensitive artifacts
+logoff-evm/out/
+logoff-evm/cache/
+logoff-evm/broadcast/
+logoff-evm/node_modules/
+logoff-evm/.env
+logoff-evm/lib/
+logoff-evm/circuits/circomlib/
+logoff-evm/sepolia-note.json
+
+# Exception: zkey needed for EVM dApp (browser proof generation)
+!app-evm/circuits/withdraw_final.zkey
+
+# React app
+app-evm-react/node_modules/
+app-evm-react/dist/
+!app-evm-react/public/circuits/withdraw_final.zkey

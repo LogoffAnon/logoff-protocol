@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: logoff-evm
+    runtime: static
+    buildCommand: "cd app-evm-react && npm install && npm run build && mkdir -p $(pwd)/dist/app && mv $(pwd)/dist/index.html $(pwd)/dist/app/index.html && cp $(pwd)/../app-evm/index.html $(pwd)/dist/index.html && ls -la $(pwd)/dist/ && head -3 $(pwd)/dist/index.html"
+    staticPublishPath: ./app-evm-react/dist
+    routes:
+      - type: rewrite
+        source: /app
+        destination: /app/index.html

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>LogOff | Private Transactions on Ethereum</title>
+<meta name="description" content="Log off from surveillance. Zero-knowledge privacy protocol on Ethereum.">
+<meta property="og:title" content="LogOff Protocol">
+<meta property="og:description" content="Log off from surveillance. Private transactions on Ethereum.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --field: #4a7c3f;
+  --field-light: #6b9f5a;
+  --field-dark: #365c2e;
+  --earth: #8B7355;
+  --earth-light: #a89272;
+  --cream: #f5f0e6;
+  --cream-dark: #e8dfc8;
+  --warm: #d4c5a0;
+  --vintage: #c9b97a;
+  --paper: #faf6ee;
+  --paper-dark: #f0ead8;
+  --ink: #2c2416;
+  --ink-light: #5a4d3a;
+  --ink-mid: #7a6d5a;
+  --ink-faint: #b0a590;
+  --sky: #d4c9a8;
+  --toggle-bg: #ffffff;
+  --toggle-dot: #4a7c3f;
+  --accent: #4a7c3f;
+  --accent-light: #5a9a48;
+  --danger: #c0392b;
+  --glow: 0 4px 30px rgba(74,124,63,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ FILM GRAIN ═══ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.5;
+}
+
+/* ═══ SELECTION ═══ */
+::selection { background: var(--field-light); color: white; }
+
+/* ═══ NAV ═══ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 1.1rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(250,246,238,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--cream-dark);
+  transition: all 0.4s;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 0.7rem;
+  text-decoration: none; color: var(--ink);
+}
+.logo-toggle {
+  width: 36px; height: 20px;
+  background: var(--field);
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.3s;
+}
+.logo-toggle::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: all 0.3s;
+}
+.logo:hover .logo-toggle::after { left: 18px; }
+.logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.5px;
+}
+
+.nav-links { display: flex; gap: 2.2rem; align-items: center; list-style: none; }
+.nav-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ink-mid); text-decoration: none; transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--field); }
+
+.btn-nav {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 0.65rem 1.8rem;
+  background: var(--field); border: none; border-radius: 8px;
+  color: #ffffff !important; font-weight: 700; cursor: pointer; transition: all 0.3s;
+  text-decoration: none; text-shadow: none;
+  box-shadow: 0 2px 8px rgba(74,124,63,0.25);
+}
+.btn-nav:hover { background: var(--field-dark); box-shadow: var(--glow); }
+
+.hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; background:none; border:none; padding:4px; }
+.hamburger span { width:22px; height:2px; background:var(--ink-mid); transition:all 0.3s; }
+
+/* ═══ HERO ═══ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  text-align: center;
+  padding: 8rem 2rem 4rem;
+  overflow: hidden;
+}
+
+.hero::before { display: none; }
+
+.hero-sky {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(180deg,
+    #d4c9a8 0%,
+    #e0d4b4 40%,
+    #e8dcc0 70%,
+    #f0e6cc 100%
+  );
+}
+
+.hero-field {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(180deg,
+    var(--field-light) 0%,
+    var(--field) 30%,
+    var(--field-dark) 100%
+  );
+  overflow: hidden;
+}
+
+/* Grass rendered via canvas */
+
+.hero-content {
+  position: relative; z-index: 2;
+  margin-bottom: 10vh;
+}
+
+.hero-tagline {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--ink-mid);
+  margin-bottom: 2rem;
+  animation: fadeUp 0.8s ease;
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(3.5rem, 10vw, 9rem);
+  font-weight: 400;
+  line-height: 0.9;
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+  animation: fadeUp 0.8s ease 0.1s both;
+}
+
+.hero h1 .off {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  color: var(--field);
+}
+
+.hero-toggle-track {
+  width: 80px; height: 42px;
+  background: rgba(74,124,63,0.3);
+  border-radius: 21px;
+  position: relative;
+  transition: background 0.6s;
+  cursor: pointer;
+}
+.hero-toggle-track.on { background: var(--field); }
+.hero-toggle-thumb {
+  width: 36px; height: 36px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.hero-toggle-track.on .hero-toggle-thumb { left: 41px; }
+
+.hero-desc {
+  font-size: 1.1rem;
+  color: var(--ink-mid);
+  max-width: 480px;
+  margin: 1.5rem auto 2.5rem;
+  line-height: 1.8;
+  animation: fadeUp 0.8s ease 0.2s both;
+}
+
+.hero-actions {
+  display: flex; gap: 1rem; justify-content: center;
+  animation: fadeUp 0.8s ease 0.3s both;
+}
+
+.btn-primary {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  background: var(--field); color: white;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: all 0.3s; text-decoration: none;
+}
+.btn-primary:hover { background: var(--field-dark); box-shadow: var(--glow); transform: translateY(-2px); }
+
+.btn-outline {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 1rem 2.5rem;
+  background: var(--paper); color: var(--ink-light);
+  border: 1.5px solid var(--earth-light); border-radius: 8px; cursor: pointer;
+  transition: all 0.3s; text-decoration: none;
+}
+.btn-outline:hover { border-color: var(--field); color: var(--field); }
+
+.hero-metrics {
+  display: flex; gap: 4rem; margin-top: 4rem;
+  animation: fadeUp 0.8s ease 0.4s both;
+  position: relative; z-index: 2;
+  background: rgba(45,85,32,0.6);
+  backdrop-filter: blur(6px);
+  padding: 1.2rem 2.5rem;
+  border-radius: 12px;
+}
+.metric-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem; color: white;
+  display: block;
+}
+.metric-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(255,255,255,0.7); margin-top: 0.2rem;
+}
+
+/* ═══ COMMON ═══ */
+section { position: relative; padding: 5rem 2rem; }
+.container { max-width: 1100px; margin: 0 auto; }
+
+.sec-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--field); margin-bottom: 0.6rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.sec-label::before { display: none; }
+.sec-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 400; line-height: 1.15;
+  margin-bottom: 0.8rem; color: var(--ink);
+}
+.sec-title .italic {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic; color: var(--field);
+}
+.sec-desc { color: var(--ink-mid); max-width: 500px; font-size: 0.95rem; }
+
+.reveal {
+  opacity: 0; transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ═══ SECTION BACKGROUNDS ═══ */
+.sec-cream { background: var(--cream); position: relative; }
+.sec-cream::before { content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, transparent, var(--field-light), transparent); }
+.sec-paper { background: var(--paper); }
+
+/* ═══ HOW IT WORKS ═══ */
+.steps {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 2rem; margin-top: 3.5rem;
+}
+.step {
+  background: var(--paper);
+  border: 1px solid var(--cream-dark);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(44,36,22,0.04), 0 4px 12px rgba(44,36,22,0.03);
+}
+.step:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(44,36,22,0.08), 0 8px 32px rgba(44,36,22,0.04); }
+.step::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--field-light), var(--field), var(--field-dark));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s;
+}
+.step:hover::before { transform: scaleX(1); }
+.step-n {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3.5rem; color: var(--cream-dark);
+  line-height: 1; margin-bottom: 1rem;
+}
+.step h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem; font-weight: 400;
+  margin-bottom: 0.6rem;
+}
+.step p { font-size: 0.88rem; color: var(--ink-mid); line-height: 1.7; }
+
+/* ═══ FEATURES ═══ */
+.feats {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem; margin-top: 3.5rem;
+}
+.feat {
+  background: var(--paper);
+  border: 1px solid var(--cream-dark);
+  border-radius: 16px;
+  padding: 2rem; display: flex; gap: 1.2rem;
+  align-items: flex-start;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(44,36,22,0.04), 0 4px 12px rgba(44,36,22,0.03);
+}
+.feat:hover { box-shadow: 0 4px 16px rgba(44,36,22,0.08), 0 8px 32px rgba(44,36,22,0.04); border-color: var(--field-light); transform: translateY(-3px); }
+.feat-icon {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: var(--field);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-family: 'Space Mono', monospace;
+  font-size: 1rem; font-weight: 700;
+}
+.feat h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem; font-weight: 400;
+  margin-bottom: 0.3rem;
+}
+.feat p { font-size: 0.82rem; color: var(--ink-mid); line-height: 1.6; }
+
+/* ═══ SPECS ═══ */
+.specs {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem; margin-top: 3.5rem;
+}
+.spec {
+  text-align: center; padding: 2rem 1rem;
+  background: var(--paper);
+  border: 1px solid var(--cream-dark);
+  border-radius: 16px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(44,36,22,0.04), 0 4px 12px rgba(44,36,22,0.03);
+}
+.spec:hover { border-color: var(--field-light); transform: translateY(-3px); box-shadow: 0 4px 16px rgba(44,36,22,0.08), 0 8px 32px rgba(44,36,22,0.04); }
+.spec-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem; color: var(--field);
+  margin-bottom: 0.3rem;
+}
+.spec-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; color: var(--ink-faint);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+/* ═══ TOKEN ═══ */
+.token-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 3rem; margin-top: 3.5rem; align-items: start;
+}
+.token-info h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; font-weight: 400; margin-bottom: 1.2rem;
+}
+.token-info h3 span { color: var(--field); font-family: 'Instrument Serif', serif; font-style: italic; }
+.token-utility { list-style: none; }
+.token-utility li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--cream-dark);
+  display: flex; gap: 1rem; align-items: flex-start;
+}
+.token-utility li:last-child { border-bottom: none; }
+.tu-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: var(--field); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-family: 'Space Mono', monospace;
+  font-size: 0.75rem; font-weight: 700;
+  margin-top: 2px;
+}
+.tu-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 0.92rem; font-weight: 400; margin-bottom: 0.15rem;
+}
+.tu-desc { font-size: 0.78rem; color: var(--ink-mid); line-height: 1.5; }
+
+.tbox {
+  background: var(--paper); border: 1px solid var(--cream-dark);
+  border-radius: 12px; padding: 2rem;
+  position: relative; overflow: hidden;
+}
+.tbox::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--field-light), var(--field), var(--earth));
+  border-radius: 12px 12px 0 0;
+}
+.tbox-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-mid); margin-bottom: 1.5rem;
+}
+.trow {
+  display: flex; justify-content: space-between;
+  padding: 0.65rem 0; border-bottom: 1px solid var(--cream-dark);
+  font-size: 0.82rem;
+}
+.trow:last-child { border-bottom: none; }
+.trow .tl2 { color: var(--ink-mid); }
+.trow .tv { color: var(--ink); font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.78rem; }
+.trow .tv.ac { color: var(--field); }
+
+.tca {
+  margin-top: 1.5rem; background: var(--cream);
+  border: 1px solid var(--cream-dark); border-radius: 8px;
+  padding: 0.8rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.tca-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.tca-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem; color: var(--field);
+  word-break: break-all;
+}
+.tca-copy {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  background: var(--field); border: none; border-radius: 4px;
+  color: white; cursor: pointer; transition: all 0.3s;
+}
+.tca-copy:hover { background: var(--field-dark); }
+
+/* ═══ APP ═══ */
+.app-wrap { max-width: 520px; margin: 3rem auto 0; }
+.pool-bar {
+  background: var(--paper); border: 1px solid var(--cream-dark);
+  border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1rem;
+}
+.pool-bar-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 0.6rem;
+}
+.pool-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+.pv { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--field); }
+.pl { font-family: 'Space Mono', monospace; font-size: 0.5rem; color: var(--ink-faint); letter-spacing: 1px; text-transform: uppercase; margin-top: 0.1rem; }
+
+.app-box {
+  background: linear-gradient(135deg, var(--paper) 0%, var(--cream) 100%);
+  border: 1px solid var(--cream-dark);
+  border-radius: 20px; overflow: hidden;
+  box-shadow: 0 8px 40px rgba(44,36,22,0.08);
+}
+.app-tabs { display: flex; border-bottom: 1px solid var(--cream-dark); }
+.app-tab {
+  flex: 1; padding: 0.9rem; text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); background: transparent;
+  border: none; cursor: pointer; transition: all 0.3s;
+  position: relative;
+}
+.app-tab.active { color: var(--field); background: rgba(74,124,63,0.04); }
+.app-tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 0;
+  width: 100%; height: 2px; background: var(--field);
+}
+.app-body { padding: 1.8rem; }
+.app-panel { display: none; }
+.app-panel.active { display: block; }
+.ig { margin-bottom: 1.2rem; }
+.il {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 0.4rem; display: block;
+}
+.inp {
+  width: 100%; padding: 0.85rem 1rem;
+  background: var(--cream); border: 1px solid var(--cream-dark);
+  border-radius: 8px; color: var(--ink);
+  font-family: 'Space Mono', monospace; font-size: 0.88rem;
+  transition: border-color 0.3s; outline: none;
+}
+.inp:focus { border-color: var(--field); }
+.inp::placeholder { color: var(--ink-faint); }
+.presets { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.preset {
+  flex: 1; padding: 0.45rem; text-align: center;
+  background: var(--cream); border: 1px solid var(--cream-dark);
+  border-radius: 6px; color: var(--ink-mid);
+  font-family: 'Space Mono', monospace; font-size: 0.68rem;
+  cursor: pointer; transition: all 0.3s;
+}
+.preset:hover, .preset.active {
+  border-color: var(--field); color: var(--field);
+  background: rgba(74,124,63,0.06);
+}
+.fr {
+  display: flex; justify-content: space-between;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--cream-dark);
+  font-size: 0.78rem;
+}
+.fr:last-child { border-bottom: none; }
+.fr .fl { color: var(--ink-faint); }
+.fr .fv { color: var(--ink-mid); font-family: 'Space Mono', monospace; }
+.btn-app {
+  width: 100%; padding: 0.95rem; margin-top: 1.2rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase;
+  background: var(--field); color: white;
+  border: none; border-radius: 8px; cursor: pointer;
+  font-weight: 700; transition: all 0.3s;
+}
+.btn-app:hover { background: var(--field-dark); box-shadow: 0 0 20px rgba(74,124,63,0.2), var(--glow); }
+.btn-app.outline {
+  background: transparent; border: 1.5px solid var(--field); color: var(--field);
+}
+.btn-app.outline:hover { background: var(--field); color: white; }
+.note-out {
+  background: #faf5e4; border: 1px dashed var(--earth-light);
+  border-radius: 8px; padding: 0.9rem; margin-top: 0.8rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; color: var(--field);
+  font-style: italic;
+  word-break: break-all; line-height: 1.6; display: none;
+}
+.note-out.show { display: block; }
+.note-warn {
+  font-size: 0.68rem; color: var(--danger);
+  margin-top: 0.6rem; display: none; align-items: center; gap: 0.4rem;
+}
+.note-warn.show { display: flex; }
+
+/* ═══ ROADMAP ═══ */
+.rm-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem; margin-top: 3.5rem;
+}
+.rm-phase {
+  background: var(--paper); border: 1px solid var(--cream-dark);
+  border-radius: 16px; padding: 1.8rem 1.5rem;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(44,36,22,0.04), 0 4px 12px rgba(44,36,22,0.03);
+}
+.rm-phase:hover { border-color: var(--field-light); transform: translateY(-3px); box-shadow: 0 4px 16px rgba(44,36,22,0.08), 0 8px 32px rgba(44,36,22,0.04); }
+.rm-phase.current { border-color: var(--field); }
+.rm-phase.current::before {
+  content: 'NOW'; position: absolute; top: -0.4rem; right: 1rem;
+  font-family: 'Space Mono', monospace; font-size: 0.5rem;
+  letter-spacing: 2px; color: white;
+  background: var(--field); padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+}
+.rm-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--field); margin-bottom: 0.5rem;
+}
+.rm-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem; font-weight: 400; margin-bottom: 0.8rem;
+}
+.rm-items { list-style: none; padding: 0; }
+.rm-items li {
+  font-size: 0.75rem; color: var(--ink-mid); padding: 0.2rem 0;
+  padding-left: 1rem; position: relative;
+}
+.rm-items li::before {
+  content: '→'; position: absolute; left: 0;
+  color: var(--field-light);
+}
+
+/* ═══ QUOTE ═══ */
+.quote-section {
+  background: var(--field);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  color: white;
+  text-align: center;
+  padding: 5rem 2rem;
+  border-radius: 0;
+  margin-top: 0;
+  position: relative;
+  z-index: 3;
+}
+.quote-text {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+.quote-attr {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+  margin-top: 1.5rem;
+  opacity: 0.6;
+}
+
+/* ═══ FOOTER ═══ */
+footer {
+  padding: 3.5rem 2rem;
+  border-top: 1px solid var(--cream-dark);
+  background: var(--paper);
+}
+.footer-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--ink);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.footer-links { display: flex; gap: 2rem; list-style: none; }
+.footer-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ink-mid); text-decoration: none; transition: color 0.3s;
+}
+.footer-links a:hover { color: var(--field); }
+.footer-copy {
+  font-size: 0.65rem; color: var(--ink-faint);
+  text-align: center; margin-top: 2.5rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--cream-dark);
+  max-width: 1100px; margin-left: auto; margin-right: auto;
+}
+
+/* ═══ DEVNET BANNER ═══ */
+.devnet-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1001;
+  background: rgba(54,92,46,0.85);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 1rem; text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem; letter-spacing: 1px; color: rgba(255,255,255,0.85);
+}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp { from{opacity:0;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:900px){
+  .steps,.rm-grid{grid-template-columns:1fr}
+  .feats{grid-template-columns:1fr}
+  .specs{grid-template-columns:repeat(2,1fr)}
+  .token-grid{grid-template-columns:1fr}
+  .hero-metrics{gap:2rem;flex-wrap:wrap;justify-content:center}
+}
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .nav-links{position:fixed;top:0;right:-100%;width:70%;height:100vh;background:var(--paper);flex-direction:column;justify-content:center;align-items:center;gap:2rem;transition:right 0.4s;border-left:1px solid var(--cream-dark);z-index:1001}
+  .nav-links.open{right:0}
+  .hero-actions{flex-direction:column;align-items:center}
+  .footer-inner{flex-direction:column;gap:1.5rem;text-align:center}
+  .footer-links{justify-content:center}
+  .pool-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="devnet-banner">Running on Ethereum Sepolia | Test tokens only</div>
+
+<nav style="top:28px">
+  <a href="#" class="logo">
+    <div class="logo-toggle"></div>
+    <span class="logo-text">LogOff</span>
+  </a>
+  <button class="hamburger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#protocol">Protocol</a></li>
+    <li><a href="#token">Token</a></li>
+    <li><a href="https://github.com/LogoffAnon/logoff-protocol" target="_blank">GitHub</a></li>
+    <li><a href="/app" class="btn-nav">Launch App</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-sky"></div>
+  <div class="hero-field"></div>
+  <canvas id="grassCanvas" style="position:absolute;bottom:0;left:0;right:0;width:100%;height:55%;z-index:1;pointer-events:none"></canvas>
+
+  <div class="hero-content">
+    <div class="hero-tagline">Zero-Knowledge Privacy Protocol on Ethereum</div>
+    <h1><div class="hero-toggle" style="display:inline-block;vertical-align:middle;margin-right:1rem"><div class="hero-toggle-track"><div class="hero-toggle-thumb"></div></div></div>Log<span class="off">Off</span></h1>
+    <p class="hero-desc">
+      Log off from surveillance. Deposit, shield, and withdraw with complete unlinkability. Your transactions are yours alone.
+    </p>
+    <div class="hero-actions">
+      <a href="/app" class="btn-primary">Launch App</a>
+      <a href="https://github.com/LogoffAnon/logoff-protocol" target="_blank" class="btn-outline">View Source</a>
+    </div>
+  </div>
+
+</section>
+
+<section class="quote-section">
+  <div class="reveal">
+    <p class="quote-text">"Privacy is not about having something to hide. Privacy is about having the right to choose what you reveal."</p>
+    <p class="quote-attr">The LogOff Manifesto</p>
+  </div>
+</section>
+
+<section class="sec-cream" id="how">
+  <div class="container">
+    <div class="reveal"><span class="sec-label">How It Works</span><h2 class="sec-title">Three steps to <span class="italic">disappear</span></h2><p class="sec-desc">Powered by Groth16 zkSNARKs and LogOff commitment trees. Simple for you, impossible for trackers.</p></div>
+    <div class="steps">
+      <div class="step reveal"><div class="step-n">01</div><h3>Deposit</h3><p>Deposit ETH into the shielded pool. A cryptographic commitment is generated and anchored to the on-chain commitment tree. Your deposit becomes one among many.</p></div>
+      <div class="step reveal"><div class="step-n">02</div><h3>Shield</h3><p>Your funds rest in the privacy pool. A zero-knowledge proof is generated client-side, proving ownership without revealing which deposit belongs to you.</p></div>
+      <div class="step reveal"><div class="step-n">03</div><h3>Withdraw</h3><p>Withdraw to any fresh address via the relayer network. The proof is verified on-chain with complete sender-recipient unlinkability. No link. No trace.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec-paper" id="protocol">
+  <div class="container">
+    <div class="reveal"><span class="sec-label">Protocol</span><h2 class="sec-title">Built for <span class="italic">peace of mind</span></h2><p class="sec-desc">Military-grade privacy, wrapped in simplicity.</p></div>
+    <div class="feats">
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="layers" style="color:white;width:20px;height:20px"></i></div><div><h3>Groth16 Proofs</h3><p>On-chain proof verification using BN254 elliptic curve. Proves note ownership without revealing any details.</p></div></div>
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="git-branch" style="color:white;width:20px;height:20px"></i></div><div><h3>LogOff Commitment Tree</h3><p>SNARK-optimized incremental hash tree with depth 20, supporting over 1 million deposits.</p></div></div>
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="send" style="color:white;width:20px;height:20px"></i></div><div><h3>Relayer Network</h3><p>Decoupled transaction submission provides complete sender-recipient unlinkability.</p></div></div>
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="shield-check" style="color:white;width:20px;height:20px"></i></div><div><h3>Nullifier Registry</h3><p>On-chain nullifier tracking prevents double-spending while maintaining zero-knowledge.</p></div></div>
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="zap" style="color:white;width:20px;height:20px"></i></div><div><h3>Ethereum Native</h3><p>Secured by Ethereum consensus. Built with Foundry and battle-tested OpenZeppelin libraries.</p></div></div>
+      <div class="feat reveal"><div class="feat-icon"><i data-lucide="lock" style="color:white;width:20px;height:20px"></i></div><div><h3>Non-Custodial</h3><p>No trusted third party. No KYC. No logs. Your keys, your privacy, your ETH.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec-cream">
+  <div class="container">
+    <div class="reveal"><span class="sec-label">Specifications</span><h2 class="sec-title">Under the <span class="italic">hood</span></h2></div>
+    <div class="specs">
+      <div class="spec reveal"><div class="spec-val">Groth16</div><div class="spec-lbl">Proof System</div></div>
+      <div class="spec reveal"><div class="spec-val">BN254</div><div class="spec-lbl">Elliptic Curve</div></div>
+      <div class="spec reveal"><div class="spec-val">2^20</div><div class="spec-lbl">Max Deposits</div></div>
+      <div class="spec reveal"><div class="spec-val">30</div><div class="spec-lbl">Root History</div></div>
+      <div class="spec reveal"><div class="spec-val">SNARK-opt</div><div class="spec-lbl">Hash Function</div></div>
+      <div class="spec reveal"><div class="spec-val">Foundry</div><div class="spec-lbl">Framework</div></div>
+      <div class="spec reveal"><div class="spec-val">0.15%</div><div class="spec-lbl">Relayer Fee</div></div>
+      <div class="spec reveal"><div class="spec-val">~12s</div><div class="spec-lbl">Block Time</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec-paper" id="token">
+  <div class="container">
+    <div class="reveal"><span class="sec-label">$LOGOFF Token</span><h2 class="sec-title">The <span class="italic">quiet</span> economy</h2><p class="sec-desc">$LOGOFF aligns incentives across the protocol. Stake, govern, and earn from the privacy infrastructure you help secure.</p></div>
+    <div class="token-grid">
+      <div class="token-info reveal">
+        <h3>Why <span>$LOGOFF</span>?</h3>
+        <ul class="token-utility">
+          <li><div class="tu-icon"><i data-lucide="database" style="color:white;width:18px;height:18px"></i></div><div><div class="tu-title">Relayer Staking</div><div class="tu-desc">Stake $LOGOFF to operate a relayer node. Earn withdrawal fees from every private transaction you relay.</div></div></li>
+          <li><div class="tu-icon"><i data-lucide="percent" style="color:white;width:18px;height:18px"></i></div><div><div class="tu-title">Fee Reduction</div><div class="tu-desc">Hold $LOGOFF to reduce protocol fees. Tiered system: hold more, pay less.</div></div></li>
+          <li><div class="tu-icon"><i data-lucide="vote" style="color:white;width:18px;height:18px"></i></div><div><div class="tu-title">Protocol Governance</div><div class="tu-desc">Vote on protocol parameters: denominations, fees, relayer requirements, and treasury.</div></div></li>
+          <li><div class="tu-icon"><i data-lucide="pickaxe" style="color:white;width:18px;height:18px"></i></div><div><div class="tu-title">Privacy Mining</div><div class="tu-desc">Earn $LOGOFF for using the protocol. Every deposit strengthens privacy for everyone.</div></div></li>
+        </ul>
+      </div>
+      <div class="tbox reveal" style="background:linear-gradient(135deg, var(--field-dark) 0%, var(--field) 50%, var(--field-light) 100%); color:white; border:none; padding:2.5rem;">
+        <div style="font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:1.5rem">Token Info</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:2.5rem;margin-bottom:0.3rem">$LOGOFF</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.85rem;opacity:0.8;margin-bottom:2rem">ERC-20 Token</div>
+        <div style="display:flex;justify-content:space-between;padding:1rem 0;border-top:1px solid rgba(255,255,255,0.15)">
+          <div><div style="font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:1.5px;text-transform:uppercase;opacity:0.6">Total Supply</div><div style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-top:0.2rem">1,000,000,000</div></div>
+          <div style="text-align:right"><div style="font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:1.5px;text-transform:uppercase;opacity:0.6">Chain</div><div style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-top:0.2rem">Ethereum</div></div>
+        </div>
+        <div style="margin-top:1.5rem;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:1rem;backdrop-filter:blur(4px)">
+          <div style="font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;opacity:0.6">Contract Address</div>
+          <div id="tokenCA" style="font-family:'Space Mono',monospace;font-size:0.8rem;margin-top:0.3rem;opacity:0.9">Coming Soon</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec-paper" id="docs">
+  <div class="container">
+    <div class="reveal"><span class="sec-label">Roadmap</span><h2 class="sec-title">The path <span class="italic">forward</span></h2></div>
+    <div class="rm-grid">
+      <div class="rm-phase current reveal"><div class="rm-label">Phase 1</div><div class="rm-title">Foundation</div><ul class="rm-items"><li>Core protocol on testnet</li><li>ZK circuit implementation</li><li>Single relayer operation</li><li>$LOGOFF token launch</li><li>Website & documentation</li></ul></div>
+      <div class="rm-phase reveal"><div class="rm-label">Phase 2</div><div class="rm-title">Expansion</div><ul class="rm-items"><li>Mainnet deployment</li><li>Security audit</li><li>Multi-relayer network</li><li>Privacy mining rewards</li><li>ERC-20 token support</li></ul></div>
+      <div class="rm-phase reveal"><div class="rm-label">Phase 3</div><div class="rm-title">Governance</div><ul class="rm-items"><li>DAO governance launch</li><li>Relayer staking system</li><li>Fee reduction tiers</li><li>Treasury management</li><li>Cross-chain bridge</li></ul></div>
+      <div class="rm-phase reveal"><div class="rm-label">Phase 4</div><div class="rm-title">Evolution</div><ul class="rm-items"><li>Mobile wallet SDK</li><li>Private swaps</li><li>Multi-chain deployment</li><li>Decentralized relayer mesh</li><li>Advanced ZK circuits</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="logo" style="text-decoration:none;color:var(--ink)">
+        <div class="logo-toggle"></div>
+        <span class="logo-text">LogOff</span>
+      </a>
+    </div>
+    <ul class="footer-links">
+      <li><a href="https://x.com/LogoffAnon" target="_blank">Twitter</a></li>
+      <li><a href="https://github.com/LogoffAnon/logoff-protocol" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+  <p class="footer-copy">LogOff Protocol | Zero-Knowledge Privacy on Ethereum | All transactions are final and irreversible.<br>Use at your own risk. LogOff does not store any user data or private keys.</p>
+</footer>
+
+<script>
+// ═══ GRASS (Canvas) ═══
+(function(){
+  const canvas=document.getElementById('grassCanvas');
+  const ctx=canvas.getContext('2d');
+  const blades=[];
+  const greens=['#365c2e','#3d6b35','#4a7c3f','#2e5426','#1d4a1a','#5a9a48','#6bb556','#3d7530','#68a850','#2a5f22','#4e8c3e','#336b2b'];
+  const TOTAL=8000;
+  let cw,ch;
+
+  function init(){
+    cw=canvas.offsetWidth;
+    ch=canvas.offsetHeight;
+    canvas.width=cw;
+    canvas.height=ch;
+    blades.length=0;
+    const groundTop=ch*0.18;
+    for(let i=0;i<TOTAL;i++){
+      const row=Math.random();
+      const yBase=groundTop+row*(ch-groundTop);
+      blades.push({
+        x:Math.random()*cw,
+        y:yBase,
+        h:4+Math.random()*14,
+        lean:(-8+Math.random()*16)*Math.PI/180,
+        speed:0.8+Math.random()*1.5,
+        phase:Math.random()*Math.PI*2,
+        ci:Math.floor(Math.random()*greens.length),
+        op:0.5+Math.random()*0.5,
+        w:0.4+Math.random()*1.2,
+      });
+    }
+    blades.sort((a,b)=>a.y-b.y);
+  }
+
+  let last=0;
+  function draw(t){
+    if(t-last<33){requestAnimationFrame(draw);return;}
+    last=t;
+    ctx.clearRect(0,0,cw,ch);
+    const sin=Math.sin;
+    const t1=t/1000;
+    let ci=-1;
+    for(let i=0;i<blades.length;i++){
+      const b=blades[i];
+      const sway=sin(t1*b.speed+b.phase)*5;
+      if(b.ci!==ci){ctx.strokeStyle=greens[b.ci];ci=b.ci;}
+      ctx.globalAlpha=b.op;
+      ctx.lineWidth=b.w;
+      ctx.beginPath();
+      ctx.moveTo(b.x,b.y);
+      ctx.lineTo(b.x+sin(b.lean)*b.h+sway,b.y-b.h);
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+
+  init();
+  window.addEventListener('resize',init);
+  requestAnimationFrame(draw);
+})();
+
+// ═══ NAV ═══
+const burger=document.getElementById('burger'),nL=document.getElementById('navLinks');
+burger.onclick=()=>{burger.classList.toggle('active');nL.classList.toggle('open')};
+nL.querySelectorAll('a').forEach(a=>a.onclick=()=>{burger.classList.remove('active');nL.classList.remove('open')});
+
+// ═══ REVEAL ═══
+const obs=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting)en.target.classList.add('visible')}),{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// ═══ HERO TOGGLE ═══
+(function(){const t=document.querySelector('.hero-toggle-track');let on=false;setInterval(()=>{on=!on;t.classList.toggle('on',on)},3000)})();
+
+// ═══ LUCIDE ICONS ═══
+if(window.lucide)lucide.createIcons();
+</script>
+</body>
+</html>

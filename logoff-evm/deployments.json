@@ -1,0 +1,30 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployer": "0xA7A55F08D57918ADd1575D81e54bD6d7186731FA",
+  "contracts": {
+    "Poseidon": {
+      "address": "0x4B052e65B9a4431EC115C6EcAc086Fe74758fcF6",
+      "txHash": "0x42b6d09f11e27eede386f28e04a3a0006357d5663c3cafdebca0a6ea45c0fefe"
+    },
+    "Verifier": {
+      "address": "0xfF0588e6eE5F969F2440becB3815E71f53479F30",
+      "txHash": "0x08c93ac3f448720325bae83c56f8caeed549fa5e65630fcf517a854671098f15"
+    },
+    "Pool_0_01_ETH": {
+      "address": "0x003230A7d131AB491cdFe1A9a162D7FCB738df04",
+      "txHash": "0x48a11a67f15879eb43e7a0d83c7cac87c8a142f34e4725478b303c05c3454909",
+      "denomination": "0.01 ETH"
+    },
+    "Pool_0_1_ETH": {
+      "address": "0x188DE1761C23a6387045276246De01ddd1217ccC",
+      "txHash": "0xd85d96716336ff8d1c505fd214f3ab063950fc73895709018a18e9a9f5025ef2",
+      "denomination": "0.1 ETH"
+    },
+    "Pool_1_ETH": {
+      "address": "0xaC319bBEd82A3349cC7f8adB0c980A68aeed8bAA",
+      "txHash": "0x67ab0280e1c8ae2f6eec2cd19bf1345c8fa083a828e3deef0e38dbcf58cf99cc",
+      "denomination": "1 ETH"
+    }
+  }
+}

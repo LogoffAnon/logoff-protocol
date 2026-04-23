@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogOff | App</title>
+<meta name="description" content="LogOff Protocol | Private Transactions on Ethereum Devnet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.6/build/snarkjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/circomlibjs@0.1.7/build/main.min.js"></script>
+<script src="config.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --field: #4a7c3f;
+  --field-light: #6b9f5a;
+  --field-dark: #365c2e;
+  --earth: #8B7355;
+  --earth-light: #a89272;
+  --cream: #f5f0e6;
+  --cream-dark: #e8dfc8;
+  --paper: #faf6ee;
+  --paper-dark: #f0ead8;
+  --ink: #2c2416;
+  --ink-light: #5a4d3a;
+  --ink-mid: #7a6d5a;
+  --ink-faint: #b0a590;
+  --accent: #4a7c3f;
+  --danger: #c0392b;
+  --glow: 0 4px 30px rgba(74,124,63,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Film grain */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.5;
+}
+
+::selection { background: var(--field-light); color: white; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 1.1rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(250,246,238,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--cream-dark);
+  transition: all 0.4s;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 0.7rem;
+  text-decoration: none; color: var(--ink);
+}
+.logo-toggle {
+  width: 36px; height: 20px;
+  background: var(--field);
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.3s;
+}
+.logo-toggle::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: all 0.3s;
+}
+.logo:hover .logo-toggle::after { left: 18px; }
+.logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.5px;
+}
+
+.nav-links { display: flex; gap: 2.2rem; align-items: center; list-style: none; }
+.nav-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ink-mid); text-decoration: none; transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--field); }
+
+.btn-nav {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 0.65rem 1.8rem;
+  background: var(--field); border: none; border-radius: 8px;
+  color: #ffffff !important; font-weight: 700; cursor: pointer; transition: all 0.3s;
+  text-decoration: none; text-shadow: none;
+  box-shadow: 0 2px 8px rgba(74,124,63,0.25);
+}
+.btn-nav:hover { background: var(--field-dark); box-shadow: var(--glow); }
+
+/* DEVNET BANNER */
+.devnet-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1001;
+  background: rgba(54,92,46,0.85);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 1rem; text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem; letter-spacing: 1px; color: rgba(255,255,255,0.85);
+}
+
+/* COMMON */
+section { position: relative; padding: 5rem 2rem; }
+.container { max-width: 1100px; margin: 0 auto; }
+
+.sec-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--field); margin-bottom: 0.6rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.sec-label::before {
+  content: '';
+  width: 24px; height: 1.5px;
+  background: var(--field);
+}
+.sec-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 400; line-height: 1.15;
+  margin-bottom: 0.8rem; color: var(--ink);
+}
+.sec-title .italic {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic; color: var(--field);
+}
+.sec-desc { color: var(--ink-mid); max-width: 500px; font-size: 0.95rem; }
+
+.sec-cream { background: var(--cream); position: relative; }
+.sec-cream::before { content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, transparent, var(--field-light), transparent); }
+
+/* APP */
+.app-wrap { max-width: 520px; margin: 3rem auto 0; }
+.pool-bar {
+  background: var(--paper); border: 1px solid var(--cream-dark);
+  border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1rem;
+}
+.pool-bar-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 0.6rem;
+}
+.pool-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+.pv { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--field); }
+.pl { font-family: 'Space Mono', monospace; font-size: 0.5rem; color: var(--ink-faint); letter-spacing: 1px; text-transform: uppercase; margin-top: 0.1rem; }
+
+.app-box {
+  background: linear-gradient(135deg, var(--paper) 0%, var(--cream) 100%);
+  border: 1px solid var(--cream-dark);
+  border-radius: 20px; overflow: hidden;
+  box-shadow: 0 8px 40px rgba(44,36,22,0.08);
+}
+.app-tabs { display: flex; border-bottom: 1px solid var(--cream-dark); }
+.app-tab {
+  flex: 1; padding: 0.9rem; text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); background: transparent;
+  border: none; cursor: pointer; transition: all 0.3s;
+  position: relative;
+}
+.app-tab.active { color: var(--field); background: rgba(74,124,63,0.04); }
+.app-tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 0;
+  width: 100%; height: 2px; background: var(--field);
+}
+.app-body { padding: 1.8rem; }
+.app-panel { display: none; }
+.app-panel.active { display: block; }
+.ig { margin-bottom: 1.2rem; }
+.il {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 0.4rem; display: block;
+}
+.inp {
+  width: 100%; padding: 0.85rem 1rem;
+  background: var(--cream); border: 1px solid var(--cream-dark);
+  border-radius: 8px; color: var(--ink);
+  font-family: 'Space Mono', monospace; font-size: 0.88rem;
+  transition: border-color 0.3s; outline: none;
+}
+.inp:focus { border-color: var(--field); }
+.inp::placeholder { color: var(--ink-faint); }
+.presets { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.preset {
+  flex: 1; padding: 0.45rem; text-align: center;
+  background: var(--cream); border: 1px solid var(--cream-dark);
+  border-radius: 6px; color: var(--ink-mid);
+  font-family: 'Space Mono', monospace; font-size: 0.68rem;
+  cursor: pointer; transition: all 0.3s;
+}
+.preset:hover, .preset.active {
+  border-color: var(--field); color: var(--field);
+  background: rgba(74,124,63,0.06);
+}
+.fr {
+  display: flex; justify-content: space-between;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--cream-dark);
+  font-size: 0.78rem;
+}
+.fr:last-child { border-bottom: none; }
+.fr .fl { color: var(--ink-faint); }
+.fr .fv { color: var(--ink-mid); font-family: 'Space Mono', monospace; }
+.btn-app {
+  width: 100%; padding: 0.95rem; margin-top: 1.2rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase;
+  background: var(--field); color: white;
+  border: none; border-radius: 8px; cursor: pointer;
+  font-weight: 700; transition: all 0.3s;
+}
+.btn-app:hover { background: var(--field-dark); box-shadow: 0 0 20px rgba(74,124,63,0.2), var(--glow); }
+.btn-app.outline {
+  background: transparent; border: 1.5px solid var(--field); color: var(--field);
+}
+.btn-app.outline:hover { background: var(--field); color: white; }
+.note-out {
+  background: #faf5e4; border: 1px dashed var(--earth-light);
+  border-radius: 8px; padding: 0.9rem; margin-top: 0.8rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; color: var(--field);
+  font-style: italic;
+  word-break: break-all; line-height: 1.6; display: none;
+}
+.note-out.show { display: block; }
+.note-warn {
+  font-size: 0.68rem; color: var(--danger);
+  margin-top: 0.6rem; display: none; align-items: center; gap: 0.4rem;
+}
+.note-warn.show { display: flex; }
+
+/* FOOTER */
+footer {
+  padding: 3.5rem 2rem;
+  border-top: 1px solid var(--cream-dark);
+  background: var(--paper);
+  margin-top: auto;
+}
+.footer-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--ink);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.footer-links { display: flex; gap: 2rem; list-style: none; }
+.footer-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ink-mid); text-decoration: none; transition: color 0.3s;
+}
+.footer-links a:hover { color: var(--field); }
+.footer-copy {
+  font-size: 0.65rem; color: var(--ink-faint);
+  text-align: center; margin-top: 2.5rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--cream-dark);
+  max-width: 1100px; margin-left: auto; margin-right: auto;
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp { from{opacity:0;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  nav { padding: 1.1rem 1.2rem; }
+  .nav-links { gap: 1.2rem; }
+  .footer-inner{flex-direction:column;gap:1.5rem;text-align:center}
+  .footer-links{justify-content:center}
+  .pool-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="devnet-banner">Running on Sepolia Testnet | Test tokens only</div>
+
+<nav style="top:28px">
+  <a href="index.html" class="logo">
+    <div class="logo-toggle"></div>
+    <span class="logo-text">LogOff</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Back to Home</a></li>
+  </ul>
+</nav>
+
+<section class="sec-cream" style="padding-top:7rem">
+  <div class="container" style="text-align:center">
+    <span class="sec-label" style="justify-content:center">Shielded Transfers</span>
+    <h2 class="sec-title">Time to <span class="italic">log off</span></h2>
+    <p class="sec-desc" style="margin:0 auto">Connect your wallet. Deposit ETH. Get your secret note. Withdraw from any wallet.</p>
+  </div>
+  <div class="app-wrap">
+    <div class="pool-bar">
+      <div class="pool-bar-title">Pool Status <span style="background:var(--field);color:white;font-size:.45rem;padding:.1rem .4rem;margin-left:.4rem;letter-spacing:1px;border-radius:3px">DEVNET</span></div>
+      <div class="pool-row">
+        <div><div class="pv" id="userBal">--</div><div class="pl">Your Balance</div></div>
+      </div>
+    </div>
+    <div class="app-box">
+      <div class="app-tabs">
+        <button class="app-tab active" data-tab="deposit">Deposit</button>
+        <button class="app-tab" data-tab="withdraw">Withdraw</button>
+      </div>
+      <div class="app-body">
+        <div class="app-panel active" id="panel-deposit">
+          <div class="ig">
+            <label class="il">Amount (ETH)</label>
+            <input type="text" class="inp" id="depAmt" value="0.1" readonly>
+            <div class="presets">
+              <button class="preset" data-v="0.01">0.01 ETH</button>
+              <button class="preset" data-v="0.1">0.1 ETH</button>
+              <button class="preset active" data-v="1">1 ETH</button>
+            </div>
+          </div>
+          <div class="ig" style="margin-bottom:.6rem">
+            <div class="fr"><span class="fl">Protocol Fee</span><span class="fv">0.15%</span></div>
+            <div class="fr"><span class="fl">You Receive</span><span class="fv" id="recvAmt">~0.098 ETH</span></div>
+          </div>
+          <button class="btn-app outline" id="walletBtn" onclick="handleWallet()">Connect Wallet</button>
+          <div class="note-out" id="noteBox"><span id="noteTxt"></span></div>
+          <div class="note-warn" id="noteWarn">&#9888; SAVE THIS NOTE. It is the only way to withdraw your funds.</div>
+          <div class="note-out" id="txBox" style="display:none"><span id="txTxt"></span></div>
+        </div>
+        <div class="app-panel" id="panel-withdraw">
+          <div class="ig"><label class="il">Secret Note</label><input type="text" class="inp" placeholder="logoff-eyJ2ZXJz..." id="wNote"></div>
+          <div class="ig"><label class="il">Recipient Address</label><input type="text" class="inp" placeholder="Ethereum wallet address (0x...)" id="wRecip"></div>
+          <div class="ig" style="margin-bottom:0">
+            <div class="fr"><span class="fl">Status</span><span class="fv" id="wStatus" style="color:var(--field)">Ready</span></div>
+            <div class="fr"><span class="fl">Network</span><span class="fv" id="wRelay">Sepolia</span></div>
+          </div>
+          <button class="btn-app" id="wBtn" onclick="doWithdraw()">Generate Proof & Withdraw</button>
+          <div class="note-out" id="wTxBox" style="display:none"><span id="wTxTxt"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="max-width:520px;margin:2rem auto;padding:0 1rem">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+    <div style="background:var(--cream);border:1px solid var(--cream-dark);border-radius:12px;padding:1.2rem;text-align:center">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--field)">3</div>
+      <div style="font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint)">Active Pools</div>
+    </div>
+    <div style="background:var(--cream);border:1px solid var(--cream-dark);border-radius:12px;padding:1.2rem;text-align:center">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--field)">0.15%</div>
+      <div style="font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint)">Protocol Fee</div>
+    </div>
+  </div>
+  <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--ink-faint);text-align:center;line-height:1.8;letter-spacing:0.5px">
+    Deposits are fixed-denomination for maximum privacy.<br>
+    Each pool maintains a separate anonymity set.<br>
+    Withdrawals are processed directly via your wallet.<br>
+    <a href="../index.html" style="color:var(--field);text-decoration:none;margin-top:0.5rem;display:inline-block">Learn more about the protocol &rarr;</a>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="index.html" class="logo" style="text-decoration:none;color:var(--ink)">
+        <div class="logo-toggle"></div>
+        <span class="logo-text">LogOff</span>
+      </a>
+    </div>
+    <ul class="footer-links">
+      <li><a href="https://x.com/LogoffAnon" target="_blank">Twitter</a></li>
+      <li><a href="https://github.com/LogoffAnon/logoff-protocol" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+  <p class="footer-copy">LogOff Protocol | Zero-Knowledge Privacy on Ethereum | All transactions are final and irreversible.<br>Use at your own risk. LogOff does not store any user data or private keys.</p>
+</footer>
+
+<script>
+// LogOff dApp - EVM (Sepolia)
+const POOL_ABI = [
+  "function deposit(bytes32 _commitment) external payable",
+  "function withdraw(uint[2] _pA, uint[2][2] _pB, uint[2] _pC, bytes32 _root, bytes32 _nullifierHash, address _recipient, address _relayer, uint256 _fee, uint256 _refund) external payable",
+  "function getLastRoot() external view returns (bytes32)",
+  "function nextIndex() external view returns (uint32)",
+  "function nullifierHashes(bytes32) external view returns (bool)",
+  "function zeros(uint256) external view returns (bytes32)",
+  "event Deposit(bytes32 indexed commitment, uint32 leafIndex, uint256 timestamp)"
+];
+
+let provider, signer, userAddress;
+let selectedDenom = "1";
+let poseidon, F;
+
+async function initPoseidon() {
+  if (!poseidon) {
+    poseidon = await circomlibjs.buildPoseidon();
+    F = poseidon.F;
+  }
+}
+
+// ═══ TAB SWITCHING ═══
+document.querySelectorAll(".app-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".app-tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".app-panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+  });
+});
+
+// ═══ PRESET SELECTION ═══
+document.querySelectorAll(".preset").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".preset").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedDenom = btn.dataset.v;
+    document.getElementById("depAmt").value = selectedDenom;
+    const recvEl = document.getElementById("recvAmt");
+    if (recvEl) {
+      const denom = parseFloat(selectedDenom);
+      recvEl.textContent = "~" + (denom * 0.98).toFixed(4) + " ETH";
+    }
+  });
+});
+
+// ═══ WALLET CONNECT ═══
+async function handleWallet() {
+  if (signer) { return doDeposit(); }
+  if (!window.ethereum) {
+    alert("Please install MetaMask");
+    return;
+  }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const network = await provider.getNetwork();
+    if (network.chainId !== BigInt(LOGOFF_CONFIG.network.chainId)) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: LOGOFF_CONFIG.network.chainIdHex }]
+        });
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } catch (e) {
+        alert("Please switch to Sepolia network");
+        return;
+      }
+    }
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+    const btn = document.getElementById("walletBtn");
+    if (btn) {
+      btn.textContent = "Deposit " + selectedDenom + " ETH";
+      btn.classList.remove("outline");
+    }
+    await initPoseidon();
+    await updateUserBalance();
+  } catch (e) {
+    console.error(e);
+    alert("Connection failed: " + e.message);
+  }
+}
+
+async function updateUserBalance() {
+  if (!provider || !userAddress) return;
+  const balance = await provider.getBalance(userAddress);
+  const el = document.getElementById("userBal");
+  if (el) el.textContent = parseFloat(ethers.formatEther(balance)).toFixed(4) + " ETH";
+}
+
+// ═══ DEPOSIT ═══
+async function doDeposit() {
+  if (!signer) { return handleWallet(); }
+  const btn = document.getElementById("walletBtn");
+  const statusEl = document.getElementById("txTxt");
+  const statusBox = document.getElementById("txBox");
+  const noteBox = document.getElementById("noteBox");
+  const noteWarn = document.getElementById("noteWarn");
+  const noteTxt = document.getElementById("noteTxt");
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = "Processing..."; }
+    if (statusBox) statusBox.style.display = "block";
+    if (statusEl) statusEl.textContent = "Generating commitment...";
+    const nullifier = ethers.toBigInt("0x" + Array.from(crypto.getRandomValues(new Uint8Array(31))).map(b => b.toString(16).padStart(2, '0')).join(''));
+    const secret = ethers.toBigInt("0x" + Array.from(crypto.getRandomValues(new Uint8Array(31))).map(b => b.toString(16).padStart(2, '0')).join(''));
+    const commitmentBn = poseidon([F.e(nullifier.toString()), F.e(secret.toString())]);
+    const commitmentHex = "0x" + F.toString(commitmentBn, 16).padStart(64, '0');
+    const noteData = { network: "sepolia", denomination: selectedDenom, nullifier: nullifier.toString(), secret: secret.toString(), commitment: commitmentHex };
+    const noteString = "logoff-sepolia-" + selectedDenom + "-" + btoa(JSON.stringify(noteData));
+    if (statusEl) statusEl.textContent = "Confirm in MetaMask...";
+    const poolAddress = LOGOFF_CONFIG.contracts.pools[selectedDenom];
+    const pool = new ethers.Contract(poolAddress, POOL_ABI, signer);
+    const tx = await pool.deposit(commitmentHex, { value: ethers.parseEther(selectedDenom) });
+    if (statusEl) statusEl.innerHTML = 'TX sent: <a href="' + LOGOFF_CONFIG.network.explorerUrl + '/tx/' + tx.hash + '" target="_blank" style="color:var(--field)">' + tx.hash.slice(0, 20) + '...</a> waiting...';
+    const receipt = await tx.wait();
+    if (statusEl) statusEl.innerHTML = 'Deposit confirmed! <a href="' + LOGOFF_CONFIG.network.explorerUrl + '/tx/' + tx.hash + '" target="_blank" style="color:var(--field)">View on Etherscan</a>';
+    if (noteTxt) noteTxt.textContent = noteString;
+    if (noteBox) { noteBox.classList.add("show"); noteBox.style.display = "block"; }
+    if (noteWarn) { noteWarn.classList.add("show"); noteWarn.style.display = "flex"; }
+    window._currentNote = noteString;
+    await updateUserBalance();
+  } catch (e) {
+    console.error(e);
+    if (statusEl) statusEl.textContent = "Error: " + (e.reason || e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Deposit " + selectedDenom + " ETH"; }
+  }
+}
+
+// ═══ WITHDRAW ═══
+async function doWithdraw() {
+  if (!signer) { alert("Connect wallet first via Deposit tab"); return; }
+  const btn = document.getElementById("wBtn");
+  const statusEl = document.getElementById("wStatus");
+  const txBox = document.getElementById("wTxBox");
+  const txTxt = document.getElementById("wTxTxt");
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = "Processing..."; }
+    if (statusEl) { statusEl.textContent = "Starting..."; statusEl.style.color = "var(--field)"; }
+    const noteString = document.getElementById("wNote").value.trim();
+    const recipient = document.getElementById("wRecip").value.trim();
+    if (!noteString.startsWith("logoff-sepolia-")) throw new Error("Invalid note format");
+    if (!ethers.isAddress(recipient)) throw new Error("Invalid recipient address");
+    const parts = noteString.split("-");
+    const denom = parts[2];
+    const encoded = parts.slice(3).join("-");
+    const noteData = JSON.parse(atob(encoded));
+    const poolAddress = LOGOFF_CONFIG.contracts.pools[denom];
+    if (!poolAddress) throw new Error("Unknown denomination: " + denom);
+    const pool = new ethers.Contract(poolAddress, POOL_ABI, signer);
+    if (statusEl) statusEl.textContent = "Fetching tree state...";
+    const currentBlock = await provider.getBlockNumber();
+    const fromBlock = Math.max(0, currentBlock - 49000);
+    const filter = pool.filters.Deposit();
+    const events = await pool.queryFilter(filter, fromBlock, "latest");
+    const leaves = events.map(e => ethers.toBigInt(e.args.commitment));
+    const leafIndex = leaves.findIndex(l => l === ethers.toBigInt(noteData.commitment));
+    if (leafIndex === -1) throw new Error("Commitment not found in tree");
+    if (statusEl) statusEl.textContent = "Building Merkle path...";
+    const LEVELS = LOGOFF_CONFIG.merkle.levels;
+    const zeros = [];
+    for (let i = 0; i < LEVELS; i++) {
+      const z = await pool.zeros(i);
+      zeros.push(ethers.toBigInt(z));
+    }
+    const pathElements = [];
+    const pathIndices = [];
+    let currentIndex = leafIndex;
+    let currentLevel = [...leaves];
+    for (let i = 0; i < LEVELS; i++) {
+      const siblingIndex = currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
+      const sibling = siblingIndex < currentLevel.length ? currentLevel[siblingIndex] : zeros[i];
+      pathElements.push(F.toString(F.e(sibling.toString())));
+      pathIndices.push(currentIndex % 2);
+      const nextLevel = [];
+      for (let j = 0; j < currentLevel.length; j += 2) {
+        const left = j < currentLevel.length ? currentLevel[j] : zeros[i];
+        const right = (j + 1) < currentLevel.length ? currentLevel[j + 1] : zeros[i];
+        const parent = poseidon([F.e(left.toString()), F.e(right.toString())]);
+        nextLevel.push(ethers.toBigInt(F.toString(parent)));
+      }
+      currentLevel = nextLevel;
+      currentIndex = Math.floor(currentIndex / 2);
+      if (currentLevel.length === 0) currentLevel = [zeros[i + 1] || 0n];
+    }
+    const root = await pool.getLastRoot();
+    const nullifierHashBn = poseidon([F.e(noteData.nullifier)]);
+    const nullifierHashHex = "0x" + F.toString(nullifierHashBn, 16).padStart(64, '0');
+    const spent = await pool.nullifierHashes(nullifierHashHex);
+    if (spent) throw new Error("Note already spent");
+    if (statusEl) statusEl.textContent = "Generating ZK proof (5-15s)...";
+    const input = {
+      root: ethers.toBigInt(root).toString(),
+      nullifierHash: F.toString(nullifierHashBn),
+      recipient: ethers.toBigInt(recipient).toString(),
+      relayer: "0", fee: "0", refund: "0",
+      nullifier: noteData.nullifier, secret: noteData.secret,
+      pathElements: pathElements, pathIndices: pathIndices
+    };
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, "circuits/withdraw.wasm", "circuits/withdraw_final.zkey");
+    if (statusEl) statusEl.textContent = "Confirm in MetaMask...";
+    const pA = [proof.pi_a[0], proof.pi_a[1]];
+    const pB = [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]];
+    const pC = [proof.pi_c[0], proof.pi_c[1]];
+    const tx = await pool.withdraw(pA, pB, pC, root, nullifierHashHex, recipient, "0x0000000000000000000000000000000000000000", "0", "0");
+    if (statusEl) statusEl.textContent = "Waiting for confirmation...";
+    await tx.wait();
+    if (statusEl) { statusEl.innerHTML = 'Confirmed! <a href="' + LOGOFF_CONFIG.network.explorerUrl + '/tx/' + tx.hash + '" target="_blank" style="color:var(--field)">View TX</a>'; }
+    if (txBox) { txBox.classList.add("show"); txBox.style.display = "block"; }
+    if (txTxt) txTxt.innerHTML = '<a href="' + LOGOFF_CONFIG.network.explorerUrl + '/tx/' + tx.hash + '" target="_blank" style="color:var(--field)">' + tx.hash + '</a>';
+  } catch (e) {
+    console.error(e);
+    if (statusEl) { statusEl.textContent = "Error: " + (e.reason || e.message); statusEl.style.color = "var(--danger)"; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Generate Proof & Withdraw"; }
+  }
+}
+
+// ═══ HERO TOGGLE ANIMATION ═══
+(function(){
+  const t = document.querySelector(".hero-toggle-track");
+  if (!t) return;
+  let on = false;
+  setInterval(() => { on = !on; t.classList.toggle("on", on); }, 3000);
+})();
+
+// Init Poseidon on load
+initPoseidon().catch(console.error);
+
+// Init lucide icons
+if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

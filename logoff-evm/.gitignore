@@ -1,0 +1,6 @@
+.env
+broadcast/
+cache/
+out/
+node_modules/
+circuits/build/pot14_final.ptau
